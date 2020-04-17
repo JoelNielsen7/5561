@@ -108,7 +108,7 @@ def main_cnn():
     # decay_rates = [.85, .9, .95]
     # for l in learning_rates:
     #     for d in decay_rates:
-    w_conv, b_conv, w_fc, b_fc = cnn.train_cnn(mini_batch_x, mini_batch_y,.2, .95, 15000)
+    w_conv, b_conv, w_fc, b_fc = cnn.train_cnn(mini_batch_x, mini_batch_y)
     sio.savemat('cnn.mat', mdict={'w_conv': w_conv, 'b_conv': b_conv, 'w_fc': w_fc, 'b_fc': b_fc})
     # could use following two lines to replace above two lines if only want to check results
     # data = sio.loadmat('cnn.mat')

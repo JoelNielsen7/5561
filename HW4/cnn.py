@@ -95,7 +95,7 @@ def get_mini_batch(im_train, label_train, batch_size):
 
 
 def fc(x, w, b):
-    y = (w @ x).reshape(b.shape) + b
+    y = (w @ x).reshape(b.shape, order='F') + b
     return y
 
 
@@ -114,7 +114,7 @@ def loss_euclidean(y_tilde, y):
     y_real = np.zeros((10,))
     y_real[int(y)] = 1
     l = np.sum((y_real-y_tilde)**2)
-    dl_dy = y_tilde - y_real.reshape((10,1))
+    dl_dy = y_tilde - y_real.reshape((10,1), order='F')
 
     return l, dl_dy
 
@@ -131,7 +131,7 @@ def loss_cross_entropy_softmax(x, y):
     l = np.sum(log)
     dl_dy = y_tilde - y_real
 
-    return l, dl_dy.reshape((10, 1))
+    return l, dl_dy.reshape((10, 1), order='F')
 
 def relu(x):
     # y = np.maximum(x, 0)
@@ -163,19 +163,7 @@ def conv(x, w_conv, b_conv):
         # print(w.shape, x_col.shape)
         y = (w.flatten() @ x_col.T).reshape((H, W), order='F') + b_conv[i]
         ys.append(y)
-    # w1 = w_conv[:,:,:,0]
-    # w2 = w_conv[:,:,:,1]
-    # w3 = w_conv[:,:,:,2]
-    # y1 = (w1.flatten() @ x_col.T).reshape((14, 14)) + b_conv[0]
-    # # print(y1, (w1.flatten() @ x_col.T).reshape((14, 14)), b_conv[0])
-    # y2 = (w2.flatten() @ x_col.T).reshape((14, 14)) + b_conv[1]
-    # y3 = (w3.flatten() @ x_col.T).reshape((14, 14)) + b_conv[2]
-    # print("yay", y1.shape, y2.shape, y3.shape)
-    # tmp = y1[10, 10]
-    # ys = []
-    # ys.append(y1)
-    # ys.append(y2)
-    # ys.append(y3)
+
     y = np.dstack(ys).reshape((H, W, c2), order='F')
     # print(y.shape)
     # print(y[10,10,0], y1[10,10])
@@ -185,29 +173,29 @@ def conv(x, w_conv, b_conv):
     return y
 
     # print(w_conv[0].reshape((3,3)), w_conv[1].reshape((3,3)), w_conv[2].reshape((3,3)))
-    k, k, c1, c2 = w_conv.shape
-    H, W, c1 = x.shape
-    y = np.zeros((H, W, c2))
-    x = x.reshape((H, W))
-    x_pad = np.pad(x, (1,), 'constant', constant_values = (0))
-    # print("H, W", H, W)
-    # print(x_pad.shape)
-    # x=5/0
-    # x_pad = x_pad.reshape((H+2, W+2, 1))
-    # print(w_conv[:,:,:,0].shape)
-    # x = 5/0
-    for i in range(H):
-        for j in range(W):
-            tmp = x_pad[i:i+3, j:j+3]
-            for k in range(c2):
-                tmp2 = np.dot(tmp.flatten(), w_conv[:,:,:,k].reshape((3,3)).flatten()) + b_conv[k]
-                # print("tmp2:", tmp2.shape)
-                y[i][j][k] = tmp2
-                # break
-        #     break
-        # break
-    # print(y, y.shape)
-    return y
+    # k, k, c1, c2 = w_conv.shape
+    # H, W, c1 = x.shape
+    # y = np.zeros((H, W, c2))
+    # x = x.reshape((H, W))
+    # x_pad = np.pad(x, (1,), 'constant', constant_values = (0))
+    # # print("H, W", H, W)
+    # # print(x_pad.shape)
+    # # x=5/0
+    # # x_pad = x_pad.reshape((H+2, W+2, 1))
+    # # print(w_conv[:,:,:,0].shape)
+    # # x = 5/0
+    # for i in range(H):
+    #     for j in range(W):
+    #         tmp = x_pad[i:i+3, j:j+3]
+    #         for k in range(c2):
+    #             tmp2 = np.dot(tmp.flatten(), w_conv[:,:,:,k].reshape((3,3)).flatten()) + b_conv[k]
+    #             # print("tmp2:", tmp2.shape)
+    #             y[i][j][k] = tmp2
+    #             # break
+    #     #     break
+    #     # break
+    # # print(y, y.shape)
+    # return y
 
 # def conv_backward_2(dl_dy, x, w_conv, b_conv, y):
 #     # print(dl_dy.shape, x.shape, w_conv.shape, b_conv.shape, y.shape)
@@ -501,11 +489,11 @@ def train_mlp(mini_batch_x, mini_batch_y):
     return w1, b1, w2, b2
 
 
-def train_cnn(mini_batch_x, mini_batch_y, learning_rate, decay_rate, n_iters):
-    # learning_rate = 0.21
-    # conv_learning_rate = 0.01
-    # decay_rate = .9
-    # n_iters = 28000
+def train_cnn(mini_batch_x, mini_batch_y):
+    learning_rate = 0.7
+    conv_learning_rate = 0.1
+    decay_rate = .9
+    n_iters = 8000
     w_conv = np.random.normal(0, 1, size=(3, 3, 1, 3))
     b_conv = np.random.normal(0, 1, size=(3,1))
     w_fc = np.random.normal(0, 1, size=(10, 147))
@@ -516,6 +504,7 @@ def train_cnn(mini_batch_x, mini_batch_y, learning_rate, decay_rate, n_iters):
     batch_size, _ = mini_batch_x[0].shape
     # print(batch_size)
     # print(learning_rate)
+    print(learning_rate, conv_learning_rate, decay_rate, n_iters)
     for iter in range(n_iters):
         if iter % 1000 == 999:
             learning_rate *= decay_rate
@@ -581,8 +570,8 @@ def train_cnn(mini_batch_x, mini_batch_y, learning_rate, decay_rate, n_iters):
             dL_dw_fc += dl_dw_fc
             dL_db_fc += dl_db_fc
         k = (k+1) % num_batches
-        w_conv -= (dL_dw_conv/batch_size) * learning_rate
-        b_conv -= (dL_db_conv/batch_size) * learning_rate
+        w_conv -= (dL_dw_conv/batch_size) * conv_learning_rate
+        b_conv -= (dL_db_conv/batch_size) * conv_learning_rate
         w_fc -= (dL_dw_fc/batch_size) * learning_rate
         b_fc -= (dL_db_fc/batch_size) * learning_rate
     return w_conv, b_conv, w_fc, b_fc
