@@ -28,7 +28,7 @@ def im2col(x,hh,ww,stride):
     for i in range(new_h):
        for j in range(new_w):
            patch = x[...,i*stride:i*stride+hh,j*stride:j*stride+ww]
-           col[i*new_w+j,:] = np.reshape(patch,-1)
+           col[i*new_w+j,:] = np.reshape(patch,-1, order='F')
     return col
 
 def col2im(mul,h_prime,w_prime,C):
@@ -57,20 +57,20 @@ def col2im(mul,h_prime,w_prime,C):
     return out
 
 def get_mini_batch(im_train, label_train, batch_size):
-    print("Training shape:", im_train.shape, label_train.shape)
+    # print("Training shape:", im_train.shape, label_train.shape)
     t, n = im_train.shape
-    print(t, n)
+    # print(t, n)
     combined = np.hstack((im_train.T, label_train.T))
     np.random.shuffle(combined)
 
-    print(combined.shape)
+    # print(combined.shape)
     # combined = combined.T
     # random_train, random_label = np.vsplit(combined, n-1)
     random_train = combined[:, :t].T
     # features -= features.mean(axis=0)
     random_label = combined[:,t].reshape((1, n))
-    print(random_label)
-    print(random_train.shape, random_label.shape)
+    # print(random_label)
+    # print(random_train.shape, random_label.shape)
 
     num_batches = (n // batch_size)
     remainder = n % batch_size
@@ -501,21 +501,21 @@ def train_mlp(mini_batch_x, mini_batch_y):
     return w1, b1, w2, b2
 
 
-def train_cnn(mini_batch_x, mini_batch_y):
-    learning_rate = 0.3
-    conv_learning_rate = 0.01
-    decay_rate = .9
-    n_iters = 24000
+def train_cnn(mini_batch_x, mini_batch_y, learning_rate, decay_rate, n_iters):
+    # learning_rate = 0.21
+    # conv_learning_rate = 0.01
+    # decay_rate = .9
+    # n_iters = 28000
     w_conv = np.random.normal(0, 1, size=(3, 3, 1, 3))
     b_conv = np.random.normal(0, 1, size=(3,1))
     w_fc = np.random.normal(0, 1, size=(10, 147))
     b_fc = np.zeros((10,1))
     k = 0
     num_batches = len(mini_batch_x)
-    print(num_batches)
+    # print(num_batches)
     batch_size, _ = mini_batch_x[0].shape
-    print(batch_size)
-    print(learning_rate)
+    # print(batch_size)
+    # print(learning_rate)
     for iter in range(n_iters):
         if iter % 1000 == 999:
             learning_rate *= decay_rate

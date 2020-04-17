@@ -104,7 +104,11 @@ def main_cnn():
     batch_size = 32
     im_train, im_test = im_train / 255.0, im_test / 255.0
     mini_batch_x, mini_batch_y = cnn.get_mini_batch(im_train, label_train, batch_size)
-    w_conv, b_conv, w_fc, b_fc = cnn.train_cnn(mini_batch_x, mini_batch_y)
+    # learning_rates = [.14, .16, .18]
+    # decay_rates = [.85, .9, .95]
+    # for l in learning_rates:
+    #     for d in decay_rates:
+    w_conv, b_conv, w_fc, b_fc = cnn.train_cnn(mini_batch_x, mini_batch_y,.2, .95, 15000)
     sio.savemat('cnn.mat', mdict={'w_conv': w_conv, 'b_conv': b_conv, 'w_fc': w_fc, 'b_fc': b_fc})
     # could use following two lines to replace above two lines if only want to check results
     # data = sio.loadmat('cnn.mat')
@@ -125,6 +129,7 @@ def main_cnn():
         if l_pred == label_test[0, i]:
             acc = acc + 1
     accuracy = acc / num_test
+    # print("Learning rate:", l, "Decay rate:", d, "Accuracy:", accuracy)
     for i in range(10):
         confusion[:, i] = confusion[:, i] / np.sum(confusion[:, i])
 
