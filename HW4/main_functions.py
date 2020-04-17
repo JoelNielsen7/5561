@@ -117,7 +117,7 @@ def main_cnn():
         x = im_test[:, [i]].reshape((14, 14, 1), order='F')
         pred1 = cnn.conv(x, w_conv, b_conv)  # (14, 14, 3)
         pred2 = cnn.relu(pred1)  # (14, 14, 3)
-        pred3 = cnn.pool2x2(pred2)  # (7, 7, 3)
+        pred3, maxes = cnn.pool2x2(pred2)  # (7, 7, 3)
         pred4 = cnn.flattening(pred3)  # (147, 1)
         y = cnn.fc(pred4, w_fc, b_fc)  # (10, 1)
         l_pred = np.argmax(y)

@@ -145,54 +145,44 @@ def relu_backward(dl_dy, x, y):
     dx[y < 0] = 0.01
     return dx*dl_dy
 
-# def conv_2(x, w_conv, b_conv):
-#     k, k, c1, c2 = w_conv.shape
-#     H, W, c1 = x.shape
-#     y = np.zeros((H, W, c2))
-#     x_n = x.reshape((14, 14))
-#     x_pad = np.pad(x_n, (1,), 'constant', constant_values = (0))
-#     # print(x_n, x_pad)
-#     x_im = x_pad.reshape((1, 16, 16))
-#     x_col = im2col(x_im, 3, 3, 1)
-#
-#     filter_col = np.reshape(w_conv, (3, -1))
-#     # print(x_col.shape, filter_col.shape)
-#     mul = x_col.dot(filter_col.T).reshape((14, 14, 3))
-#     for i in range(3):
-#         mul[i] += b_conv[i]
-#     # print(mul.shape)
-#     return y
 
 def conv(x, w_conv, b_conv):
-    # k, k, c1, c2 = w_conv.shape
-    # H, W, c1 = x.shape
-    # y = np.zeros((H, W, c2))
+    k, k, c1, c2 = w_conv.shape
+    H, W, c1 = x.shape
+    y = np.zeros((H, W, c2))
+
+    x_n = x.reshape((H, W), order='F')
+    x_pad = np.pad(x_n, (1,), 'constant', constant_values = (0))
+    # print(x_n, x_pad)
+    x_im = x_pad.reshape((1, H+2, W+2), order='F')
+    x_col = im2col(x_im, k, k, c1)
+    # print(x_col.shape)
+    ys = []
+    for i in range(c2):
+        w = w_conv[:,:,:,i]
+        # print(w.shape, x_col.shape)
+        y = (w.flatten() @ x_col.T).reshape((H, W), order='F') + b_conv[i]
+        ys.append(y)
     # w1 = w_conv[:,:,:,0]
     # w2 = w_conv[:,:,:,1]
     # w3 = w_conv[:,:,:,2]
-    # x_n = x.reshape((14, 14))
-    # x_pad = np.pad(x_n, (1,), 'constant', constant_values = (0))
-    # # print(x_n, x_pad)
-    # x_im = x_pad.reshape((1, 16, 16))
-    # x_col = im2col(x_im, 3, 3, 1)
-    # # print(x_col.shape)
     # y1 = (w1.flatten() @ x_col.T).reshape((14, 14)) + b_conv[0]
     # # print(y1, (w1.flatten() @ x_col.T).reshape((14, 14)), b_conv[0])
     # y2 = (w2.flatten() @ x_col.T).reshape((14, 14)) + b_conv[1]
     # y3 = (w3.flatten() @ x_col.T).reshape((14, 14)) + b_conv[2]
-    # # print("yay", y1.shape, y2.shape, y3.shape)
-    # # tmp = y1[10, 10]
+    # print("yay", y1.shape, y2.shape, y3.shape)
+    # tmp = y1[10, 10]
     # ys = []
     # ys.append(y1)
     # ys.append(y2)
     # ys.append(y3)
-    # y = np.dstack(ys).reshape((14, 14, 3))
-    # # print(y.shape)
-    # # print(y[10,10,0], y1[10,10])
-    # # x = 5/0
-    # # print("Tmp:", tmp, y[10, 10, 2])
-    # # print(y.shape)
-    # return y
+    y = np.dstack(ys).reshape((H, W, c2), order='F')
+    # print(y.shape)
+    # print(y[10,10,0], y1[10,10])
+    # x = 5/0
+    # print("Tmp:", tmp, y[10, 10, 2])
+    # print(y.shape)
+    return y
 
     # print(w_conv[0].reshape((3,3)), w_conv[1].reshape((3,3)), w_conv[2].reshape((3,3)))
     k, k, c1, c2 = w_conv.shape
@@ -251,9 +241,9 @@ def conv_backward(dl_dy, x, w_conv, b_conv, y):
     H, W, c1 = x.shape
     # print("Dl_dy:", dl_dy.shape, x.shape)
     # print("H, W", xx, y, z)
-    x_n = x.reshape((H, W))
+    x_n = x.reshape((H, W), order='F')
     x_pad = np.pad(x_n, (1,), 'constant', constant_values = (0))
-    x_im = x_pad.reshape((1, H+2, W+2))
+    x_im = x_pad.reshape((1, H+2, W+2), order='F')
     x_col = im2col(x_im, xx, y, z)
     # print(x_col, x_col.shape)
     f = H*W #196
@@ -261,15 +251,15 @@ def conv_backward(dl_dy, x, w_conv, b_conv, y):
     for i in range(w):
         # dl_dys.append(dl_dy[:,:,w].reshape((1, f)))
         # flats
-        dl_dy_t = dl_dy[:,:,i].reshape((1, f))
-        flat_t = (dl_dy_t @ x_col).reshape((xx,y,z))
+        dl_dy_t = dl_dy[:,:,i].reshape((1, f), order='F')
+        flat_t = (dl_dy_t @ x_col).reshape((xx,y,z), order='F')
         dl_dw[:,:,:,i] = flat_t
 
 
     # dl_dy1 = dl_dy[:,:,0].reshape((1, f))
     # dl_dy2 = dl_dy[:,:,1].reshape((1, f))
     # dl_dy3 = dl_dy[:,:,2].reshape((1, f))
-    # # print("S:", dl_dy1.shape)
+    # # print("S:", dl_dy1.shape)conv_backward
     # flat1 = (dl_dy1 @ x_col).reshape((xx,y,z))
     # flat2 = (dl_dy2 @ x_col).reshape((xx,y,z))
     # flat3 = (dl_dy3 @ x_col).reshape((xx,y,z))
@@ -313,6 +303,7 @@ def pool2x2(x): # (14, 14, 3)
     a = int(a / pool_size)
     b = int(b / pool_size)
     y = np.zeros((a, b, c))
+    maxes = np.zeros((a, b, c))
     for i in range(a):
         for j in range(b):
             for k in range(c):
@@ -321,8 +312,9 @@ def pool2x2(x): # (14, 14, 3)
                 max = np.max(tmp)
                 # print(tmp, max)
                 # x = 5/0
+                maxes[i][j][k] = np.argmax(tmp)
                 y[i][j][k] = max
-    return y # (7, 7, 3)
+    return y, maxes # (7, 7, 3)
 
 def pool2x2_backward(dl_dy, x, y): # (7, 7, 3), (14, 14, 3), (7, 7, 3)
     pool_size = 2
@@ -351,10 +343,32 @@ def pool2x2_backward(dl_dy, x, y): # (7, 7, 3), (14, 14, 3), (7, 7, 3)
                     x = 5/0
     return dl_dx #(14, 14, 3)
 
+def pool2x2_backward_efficient(dl_dy, x, y, maxes):
+    pool_size = 2
+    a, b, c = x.shape
+    a_new = int(a / pool_size)
+    b_new = int(b / pool_size)
+    y = np.zeros((a_new, b_new, c))
+    dl_dx = np.zeros((a, b, c))
+    for k in range(c):
+        for i in range(a_new):
+            for j in range(b_new):
+                max = maxes[i][j][k]
+                if max == 0:
+                    dl_dx[2*i, 2*j, k] = dl_dy[i, j, k]
+                elif max == 1:
+                    dl_dx[2*i, (2*j) + 1, k] = dl_dy[i, j, k]
+                elif max == 2:
+                    dl_dx[(2*i) + 1, 2*j, k] = dl_dy[i, j, k]
+                elif max == 3:
+                    dl_dx[(2*i) + 1, (2*j) + 1, k] = dl_dy[i, j, k]
+                else:
+                    x = 5/0
+    return dl_dx
 
 def flattening(x):
     # dl_dx = x.flatten(order='F').reshape(147, 1)
-    dl_dx = x.flatten(order='F').reshape(-1, 1)
+    dl_dx = x.flatten().reshape(-1, 1, order='F')
     # print(dl_dx.shape)
     return dl_dx
 
@@ -444,6 +458,7 @@ def train_mlp(mini_batch_x, mini_batch_y):
     print(num_batches)
     batch_size, _ = mini_batch_x[0].shape
     print(batch_size)
+    print(learning_rate)
     for iter in range(n_iters):
         if iter % 1000 == 999:
             learning_rate *= decay_rate
@@ -487,10 +502,10 @@ def train_mlp(mini_batch_x, mini_batch_y):
 
 
 def train_cnn(mini_batch_x, mini_batch_y):
-    learning_rate = 0.5
+    learning_rate = 0.3
     conv_learning_rate = 0.01
     decay_rate = .9
-    n_iters = 1000
+    n_iters = 24000
     w_conv = np.random.normal(0, 1, size=(3, 3, 1, 3))
     b_conv = np.random.normal(0, 1, size=(3,1))
     w_fc = np.random.normal(0, 1, size=(10, 147))
@@ -500,6 +515,7 @@ def train_cnn(mini_batch_x, mini_batch_y):
     print(num_batches)
     batch_size, _ = mini_batch_x[0].shape
     print(batch_size)
+    print(learning_rate)
     for iter in range(n_iters):
         if iter % 1000 == 999:
             learning_rate *= decay_rate
@@ -513,47 +529,48 @@ def train_cnn(mini_batch_x, mini_batch_y):
             y = mini_batch_y[k][i]
             # print("W, b:", w_conv, b_conv)
             # import time
-            t0 = time.time()
-            pred1 = conv(x.reshape((14, 14, 1)), w_conv, b_conv)  # (14, 14, 3)
-            t1 = time.time()
+            # t0 = time.time()
+            pred1 = conv(x.reshape((14, 14, 1), order='F'), w_conv, b_conv)  # (14, 14, 3)
+            # t1 = time.time()
             # print("Pred1:", pred1)
             pred2 = relu(pred1)  # (14, 14, 3)
-            t2 = time.time()
+            # t2 = time.time()
             # print("Pred2:", pred2)
-            pred3 = pool2x2(pred2)  # (7, 7, 3)
-            t3 = time.time()
+            pred3, maxes = pool2x2(pred2)  # (7, 7, 3)
+            # t3 = time.time()
             # print("Pred3:", pred3)
             pred4 = flattening(pred3)  # (147, 1)
-            t4 = time.time()
+            # t4 = time.time()
             # print("Pred4:", pred4)
             y_pred = fc(pred4, w_fc, b_fc)  # (10, 1)
-            t5 = time.time()
+            # t5 = time.time()
             # print("Y_pred:", y_pred)
             l_pred = np.argmax(y_pred)
-            t6 = time.time()
+            # t6 = time.time()
             # print(l_pred.shape)
 
             l, dl_dy = loss_cross_entropy_softmax(y_pred, y)
-            t7 = time.time()
+            # t7 = time.time()
             # print("dl_dy",dl_dy)
             dl_dx5, dl_dw_fc, dl_db_fc = fc_backward(dl_dy, pred4, w_fc, b_fc, y_pred)
-            t8 = time.time()
+            # t8 = time.time()
             # print("dx5:", dl_dx5)
             # print("dw_fc", dl_dw_fc)
             # print("db_fc", dl_db_fc)
             dl_dx4 = flattening_backward(dl_dx5, pred3, pred4)
-            t9 = time.time()
+            # t9 = time.time()
             # print("dx4:", dl_dx4)
-            dl_dx3 = pool2x2_backward(dl_dx4, pred2, pred3)
-            t10 = time.time()
+            # dl_dx3 = pool2x2_backward(dl_dx4, pred2, pred3)
+            dl_dx3 = pool2x2_backward_efficient(dl_dx4, pred2, pred3, maxes)
+            # t10 = time.time()
             # print("dx3:", dl_dx3)
             dl_dx2 = relu_backward(dl_dx3, pred1, pred2)
-            t11 = time.time()
+            # t11 = time.time()
 
             # print("dx2:", dl_dx2)
 
-            dl_dw_conv, dl_db_conv = conv_backward(dl_dx2, x.reshape((14, 14, 1)), w_conv, b_conv, pred1)
-            t12 = time.time()
+            dl_dw_conv, dl_db_conv = conv_backward(dl_dx2, x.reshape((14, 14, 1), order='F'), w_conv, b_conv, pred1)
+            # t12 = time.time()
             # print("dw", dl_dw_conv)
             # print("db", dl_db_conv)
             # print(t1-t0, t2-t1, t3-t2, t4-t3, t5-t4, t6-t5, t7-t6, t8-t7, t9-t8, t10-t9, t11-t10, t12-t11)
